@@ -21,9 +21,11 @@ services:
       - "8080:8080"
     depends_on:
       - postgres
+      - elasticsearch
 
   elasticsearch:
     image: 'docker.elastic.co/elasticsearch/elasticsearch:7.10.2'
+    container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -31,6 +33,24 @@ services:
       - "9200:9200"
     volumes:
       - esdata:/usr/share/elasticsearch/data
+  logstash:
+    build:
+      context: logstash
+    env_file: .env
+    volumes:
+      - ./logstash/config/pipelines.yml:/usr/share/logstash/config/pipelines.yml
+      - ./logstash/pipelines/:/usr/share/logstash/pipeline/
+      - ./logstash/queries/:/usr/share/logstash/config/queries/
+    depends_on:
+      - postgres
+      - elasticsearch
+  kibana:
+    image: 'docker.elastic.co/kibana/kibana:7.10.2'
+    ports:
+      - "5601:5601"
+    hostname: kibana
+    depends_on:
+      - elasticsearch
 
 volumes:
   pgdata:
